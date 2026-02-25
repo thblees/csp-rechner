@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meine Geldseite – Cash Secured Put Rechner</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;font-size:15px}
+  header{background:linear-gradient(135deg,#134e1f 0%,#22863a 100%);color:#fff;padding:18px 28px}
+  header h1{font-size:1.4rem;font-weight:700}
+  header span.sub{font-size:0.82rem;opacity:0.82;display:block;margin-top:2px}
+
+  /* API BANNER */
+  #api-banner{padding:10px 28px;background:#fef9c3;border-bottom:2px solid #fbbf24;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  #api-banner.ok{background:#dcfce7;border-color:#4ade80}
+  #api-banner label{font-weight:700;font-size:0.88rem;color:#713f12;white-space:nowrap}
+  #api-banner.ok label{color:#166534}
+  #api-key-in{border:1.5px solid #d97706;border-radius:6px;padding:5px 10px;font-size:0.88rem;width:210px;font-family:monospace}
+  #api-banner.ok #api-key-in{border-color:#22c55e}
+  #api-save{background:#134e1f;color:#fff;border:none;border-radius:6px;padding:5px 14px;cursor:pointer;font-size:0.88rem;font-weight:700}
+  #api-save:hover{background:#22863a}
+  #api-status{font-size:0.82rem;color:#92400e;font-style:italic}
+  #api-banner.ok #api-status{color:#166534}
+  .reg-link{font-size:0.82rem;font-weight:700;white-space:nowrap}
+  .reg-link a{color:#134e1f;text-decoration:underline}
+
+  /* TABS */
+  nav.tabs{display:flex;background:#134e1f;gap:2px;padding:0 16px}
+  nav.tabs button{background:transparent;color:rgba(255,255,255,0.72);border:none;padding:12px 22px;cursor:pointer;font-size:0.93rem;font-weight:600;border-bottom:3px solid transparent;transition:all .18s}
+  nav.tabs button:hover{color:#fff;background:rgba(255,255,255,0.1)}
+  nav.tabs button.active{color:#fff;border-bottom-color:#fbbf24;background:rgba(255,255,255,0.12)}
+
+  .tab-pane{display:none;padding:26px 28px}
+  .tab-pane.active{display:block}
+
+  /* CARDS */
+  .card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.07);padding:22px 24px;margin-bottom:20px}
+  .card h2{font-size:1.05rem;font-weight:700;color:#134e1f;margin-bottom:14px;border-bottom:2px solid #e2e8f0;padding-bottom:8px}
+
+  /* FORM GRID */
+  .fg{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px 20px;margin-bottom:6px}
+  .fg label{display:block;font-size:0.8rem;font-weight:600;color:#475569;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.4px}
+  .fg input{width:100%;border:1.5px solid #cbd5e1;border-radius:7px;padding:7px 10px;font-size:0.95rem;transition:border-color .15s}
+  .fg input:focus{outline:none;border-color:#22863a;box-shadow:0 0 0 3px rgba(34,134,58,0.12)}
+  .fg .fetch-row{display:flex;gap:6px}
+  .fg .fetch-row input{flex:1}
+  .fg .fetch-row button{background:#22863a;color:#fff;border:none;border-radius:7px;padding:0 12px;cursor:pointer;font-size:0.82rem;font-weight:700}
+  .fg .fetch-row button:hover{background:#134e1f}
+
+  /* BUTTON */
+  .btn-primary{background:linear-gradient(135deg,#134e1f,#22863a);color:#fff;border:none;border-radius:8px;padding:10px 28px;cursor:pointer;font-size:1rem;font-weight:700;margin-top:10px;box-shadow:0 2px 8px rgba(19,78,31,0.3)}
+  .btn-primary:hover{opacity:0.9;transform:translateY(-1px)}
+
+  /* RESULTS */
+  .result-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:12px;margin-top:14px}
+  .rbox{background:#f8fafc;border-radius:9px;border:1.5px solid #e2e8f0;padding:12px 14px;text-align:center}
+  .rbox .lbl{font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+  .rbox .val{font-size:1.35rem;font-weight:800;color:#134e1f}
+  .rbox.hi{border-color:#4ade80;background:#f0fdf4}
+  .rbox.hi .val{color:#16a34a}
+  .rbox.ann{border-color:#f59e0b;background:#fffbeb;border-width:2.5px}
+  .rbox.ann .val{color:#b45309;font-size:1.55rem}
+  .rbox.be{border-color:#818cf8;background:#eef2ff}
+  .rbox.be .val{color:#4338ca}
+  .rbox.warn{border-color:#f87171;background:#fff5f5}
+  .rbox.warn .val{color:#dc2626}
+
+  /* MULTI TABLE */
+  .tbl-wrap{overflow-x:auto;border-radius:10px;border:1.5px solid #e2e8f0}
+  table.multi{width:100%;border-collapse:collapse;min-width:1000px}
+  table.multi th{background:#134e1f;color:#fff;font-size:0.76rem;font-weight:700;padding:9px 7px;text-align:center;letter-spacing:0.3px;white-space:nowrap}
+  table.multi th.ann-hdr{background:#92400e !important;font-size:0.8rem;border-left:2px solid #f59e0b}
+  table.multi td{padding:6px 6px;border-bottom:1px solid #f1f5f9;font-size:0.86rem;vertical-align:middle}
+  table.multi td input{border:1.5px solid #e2e8f0;border-radius:5px;padding:4px 6px;font-size:0.84rem;width:100%}
+  table.multi td input:focus{outline:none;border-color:#22863a}
+  table.multi tr:hover td{background:#f0fdf4}
+  .ctd{text-align:center}
+  .lbl-col input{background:#f0f4f8;font-weight:600;color:#334155;font-size:0.82rem}
+
+  /* TICKER FETCH */
+  .tk-cell{display:flex;gap:4px;align-items:center}
+  .tk-cell input{width:64px;text-transform:uppercase}
+  .tk-cell button{background:#22863a;color:#fff;border:none;border-radius:5px;padding:4px 8px;cursor:pointer;font-size:0.78rem;font-weight:700}
+  .tk-cell button:hover{background:#134e1f}
+
+  /* ANN COLUMN */
+  .ann-col{background:#fffbeb !important;font-weight:900 !important;color:#b45309 !important;font-size:0.98rem !important;border-left:2px solid #f59e0b !important;min-width:85px}
+  .best-row .ann-col{background:#fef08a !important;color:#713f12 !important;font-size:1.05rem !important}
+  .best-row td{background:#f0fdf4 !important}
+
+  /* BE COLUMN */
+  .be-col{background:#eef2ff !important;color:#4338ca !important;font-weight:700 !important;min-width:80px}
+
+  /* BADGES */
+  .badge{display:inline-block;font-size:0.72rem;font-weight:700;padding:2px 9px;border-radius:20px;margin-right:6px}
+  .badge-itm{background:#fee2e2;color:#dc2626}
+  .badge-otm{background:#dcfce7;color:#16a34a}
+  .badge-atm{background:#fef9c3;color:#b45309}
+
+  /* DEL BTN */
+  .del-btn{background:none;border:none;cursor:pointer;color:#94a3b8;font-size:1rem;padding:2px 6px}
+  .del-btn:hover{color:#ef4444}
+
+  /* INTRO CARDS */
+  .intro-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;margin-top:16px}
+  .info-card{border-radius:10px;padding:16px 18px;border-left:4px solid}
+  .info-card.green{background:#f0fdf4;border-color:#22863a}
+  .info-card.blue{background:#eff6ff;border-color:#3b82f6}
+  .info-card.amber{background:#fffbeb;border-color:#f59e0b}
+  .info-card.purple{background:#f5f3ff;border-color:#8b5cf6}
+  .info-card h3{font-size:0.88rem;font-weight:700;margin-bottom:6px}
+  .info-card p{font-size:0.83rem;color:#475569;line-height:1.6}
+
+  /* WAS TUN */
+  .scenario-table{width:100%;border-collapse:collapse;margin-top:12px}
+  .scenario-table th{background:#134e1f;color:#fff;padding:9px 12px;font-size:0.82rem;text-align:left}
+  .scenario-table td{padding:9px 12px;border-bottom:1px solid #e2e8f0;font-size:0.85rem;vertical-align:top}
+  .scenario-table tr:nth-child(even) td{background:#f8fafc}
+
+  /* DATE / TOOLBAR */
+  .date-row{display:flex;align-items:center;gap:16px;margin-bottom:14px;flex-wrap:wrap}
+  .date-row label{font-weight:700;font-size:0.87rem;color:#134e1f}
+  .date-row input{border:2px solid #22863a;border-radius:7px;padding:6px 10px;font-size:0.9rem}
+  .ann-legend{background:#fffbeb;border:1.5px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:0.84rem;color:#713f12;line-height:1.6}
+  .tbl-toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+  .tbl-toolbar button{border:none;border-radius:7px;padding:7px 16px;cursor:pointer;font-size:0.87rem;font-weight:700}
+  .btn-add{background:#22863a;color:#fff}
+  .btn-add:hover{background:#134e1f}
+  .btn-del{background:#e2e8f0;color:#475569}
+  .btn-del:hover{background:#f87171;color:#fff}
+  .btn-clr{background:#e2e8f0;color:#475569}
+  .btn-clr:hover{background:#fca5a5;color:#7f1d1d}
+
+  .tip{font-size:0.78rem;color:#64748b;font-style:italic}
+  .fetch-status{font-size:0.75rem;color:#64748b;margin-top:2px;height:16px}
+  .fetch-status.ok{color:#16a34a}
+  .fetch-status.err{color:#dc2626}
+
+  /* CSP DIAGRAM */
+  .payoff-box{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:16px;margin-top:16px}
+  .payoff-box h3{font-size:0.88rem;font-weight:700;color:#134e1f;margin-bottom:10px}
+
+  footer{text-align:center;padding:16px;font-size:0.78rem;color:#94a3b8;border-top:1px solid #e2e8f0;margin-top:10px}
+  footer a{color:#22863a;text-decoration:none}
+
+  @media(max-width:600px){
+    .tab-pane{padding:14px 12px}
+    nav.tabs button{padding:10px 10px;font-size:0.8rem}
+    header h1{font-size:1.1rem}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>💵 Meine Geldseite – Cash Secured Put Rechner</h1>
+  <span class="sub">Berechne Rendite, Annualisierte Rendite, Breakeven &amp; Zuweisungsrisiko für Cash Secured Puts</span>
+</header>
+
+<!-- API BANNER -->
+<div id="api-banner">
+  <label>🔑 Finnhub API-Key:</label>
+  <input type="text" id="api-key-in" placeholder="Ihr API-Key (z.B. abc123xyz)" autocomplete="off">
+  <button id="api-save">Speichern</button>
+  <span id="api-status">Kein Key hinterlegt – Live-Kurse nicht verfügbar</span>
+  <span class="reg-link">Noch kein Key? → <a href="https://finnhub.io/register" target="_blank">Kostenlos registrieren auf finnhub.io</a></span>
+</div>
+
+<!-- TABS -->
+<nav class="tabs">
+  <button class="active" onclick="showTab('intro',this)">📖 Was ist ein CSP?</button>
+  <button onclick="showTab('single',this)">📊 Einzelne Option</button>
+  <button onclick="showTab('multi',this)">🔢 Optionen vergleichen</button>
+  <button onclick="showTab('action',this)">✅ Was tun?</button>
+</nav>
+
+<!-- ===== INTRO ===== -->
+<div id="tab-intro" class="tab-pane active">
+  <div class="card">
+    <h2>Was ist ein Cash Secured Put (CSP)?</h2>
+    <p style="line-height:1.8;color:#334155">
+      Ein <strong>Cash Secured Put</strong> bedeutet: Sie verkaufen eine Put-Option auf eine Aktie, die Sie gerne kaufen würden –
+      und legen gleichzeitig die nötige Kaufsumme als Barsicherheit zurück.
+      Für den Verkauf erhalten Sie sofort eine <strong>Optionsprämie</strong>.<br><br>
+      <strong>Zwei mögliche Ausgänge:</strong><br>
+      ① Die Aktie bleibt über dem Strike → Option verfällt wertlos, Sie behalten die Prämie ✅<br>
+      ② Die Aktie fällt unter den Strike → Sie werden zugeteilt: Sie kaufen 100 Aktien zum Strike-Preis
+      (aber um die Prämie verbilligt).
+    </p>
+    <div class="intro-grid">
+      <div class="info-card green">
+        <h3>💰 Prämienrendite (ROO)</h3>
+        <p>Prämie geteilt durch das gebundene Kapital (Strike × 100). Zeigt, wie viel % Sie für das Warten erhalten.</p>
+      </div>
+      <div class="info-card amber">
+        <h3>🔁 Annualisierte Rendite</h3>
+        <p>ROO hochgerechnet auf ein Jahr. So vergleichen Sie kurze und lange Laufzeiten fair miteinander.</p>
+      </div>
+      <div class="info-card purple">
+        <h3>🎯 Breakeven-Preis</h3>
+        <p>Strike minus Prämie. Bis zu diesem Kurs machen Sie keinen Verlust – auch bei Zuteilung.</p>
+      </div>
+      <div class="info-card blue">
+        <h3>🛡️ Puffer bis Breakeven</h3>
+        <p>Um wie viel Prozent darf die Aktie fallen, bevor Sie in den Verlust geraten? (= Prämie als Schutzpolster)</p>
+      </div>
+    </div>
+
+    <!-- PAYOFF DIAGRAM (ASCII/text) -->
+    <div class="payoff-box">
+      <h3>📈 Auszahlungsprofil eines Cash Secured Put</h3>
+      <div style="font-family:monospace;font-size:0.82rem;color:#334155;line-height:1.7;background:#f0fdf4;border-radius:8px;padding:14px;overflow-x:auto">
+        <pre>
+  Gewinn/Verlust
+       |
+  +P ──┼────────────────────────── (max. Gewinn = Prämie P)
+       |                          /
+       |                         /
+   0 ──┼──────────────── Breakeven (= Strike − P)
+       |                /
+  −── ─┼───────────────/──────── Strike ────── Kurs der Aktie →
+       |
+  Verlust steigt wenn Kurs unter (Strike − P) fällt
+  Verlust wird durch Zuteilung + Halten der Aktien begrenzt</pre>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;padding:14px;background:#f0f9ff;border-radius:8px;border-left:4px solid #3b82f6">
+      <strong>💡 Live-Kurse aktivieren:</strong><br>
+      <span style="font-size:0.88rem;color:#475569">
+        Registrieren Sie sich kostenlos auf
+        <a href="https://finnhub.io/register" target="_blank" style="color:#134e1f;font-weight:700">finnhub.io/register</a>
+        und tragen Sie Ihren API-Key oben ein. Dann können Sie Kurse per Klick abrufen.
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EINZELNE OPTION ===== -->
+<div id="tab-single" class="tab-pane">
+  <div class="card">
+    <h2>📊 Einzelnen Cash Secured Put analysieren</h2>
+    <div class="fg">
+      <div>
+        <label>Ticker-Symbol</label>
+        <div class="fetch-row">
+          <input type="text" id="s-ticker" placeholder="z.B. KO" style="text-transform:uppercase">
+          <button onclick="fetchPrice('s-ticker','s-price','s-fetch-status')">Kurs abrufen</button>
+        </div>
+        <div class="fetch-status" id="s-fetch-status"></div>
+      </div>
+      <div>
+        <label>Aktueller Kurs ($)</label>
+        <input type="number" id="s-price" placeholder="z.B. 63.10" step="0.01" min="0" oninput="calcSingle()">
+      </div>
+      <div>
+        <label>Strike-Preis (Put) ($)</label>
+        <input type="number" id="s-strike" placeholder="z.B. 62.00" step="0.01" min="0" oninput="calcSingle()">
+      </div>
+      <div>
+        <label>Optionsprämie ($/Kontrakt)</label>
+        <input type="number" id="s-prem" placeholder="z.B. 0.85" step="0.01" min="0" oninput="calcSingle()">
+      </div>
+      <div>
+        <label>Heutiges Datum</label>
+        <input type="date" id="s-today" oninput="calcSingle()">
+      </div>
+      <div>
+        <label>Verfallsdatum</label>
+        <input type="date" id="s-expiry" oninput="calcSingle()">
+      </div>
+    </div>
+    <button class="btn-primary" onclick="calcSingle()">🧮 Berechnen</button>
+
+    <div id="s-result" style="display:none;margin-top:18px">
+      <div id="s-moneyness-badge" style="margin-bottom:10px;font-size:0.9rem;font-weight:700"></div>
+      <div class="result-grid">
+        <div class="rbox ann">
+          <div class="lbl">🔁 Ann. Rendite (% p.a.)</div>
+          <div class="val" id="r-ann">–</div>
+        </div>
+        <div class="rbox hi">
+          <div class="lbl">📐 Prämienrendite (%)</div>
+          <div class="val" id="r-roo">–</div>
+        </div>
+        <div class="rbox be">
+          <div class="lbl">🎯 Breakeven-Preis ($)</div>
+          <div class="val" id="r-be">–</div>
+        </div>
+        <div class="rbox">
+          <div class="lbl">🛡️ Puffer bis Breakeven (%)</div>
+          <div class="val" id="r-buf">–</div>
+        </div>
+        <div class="rbox">
+          <div class="lbl">📅 Tage bis Verfall</div>
+          <div class="val" id="r-days">–</div>
+        </div>
+        <div class="rbox">
+          <div class="lbl">💵 Prämie gesamt ($)</div>
+          <div class="val" id="r-prem-total">–</div>
+        </div>
+        <div class="rbox">
+          <div class="lbl">🏦 Gebundenes Kapital ($)</div>
+          <div class="val" id="r-capital">–</div>
+        </div>
+        <div class="rbox">
+          <div class="lbl">🏷️ Effektiver Kaufpreis ($)</div>
+          <div class="val" id="r-effprice">–</div>
+        </div>
+      </div>
+
+      <!-- ASSIGNMENT INFO -->
+      <div id="s-assign-box" style="margin-top:16px;padding:14px;border-radius:9px;border:1.5px solid #e2e8f0;background:#f8fafc">
+        <strong>Bei Zuteilung (Assignment):</strong>
+        <span id="s-assign-text" style="font-size:0.9rem;color:#334155;margin-left:6px"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MEHRERE OPTIONEN VERGLEICHEN ===== -->
+<div id="tab-multi" class="tab-pane">
+  <div class="card">
+    <h2>🔢 Puts vergleichen – gleiche Aktie, verschiedene Strikes &amp; Laufzeiten</h2>
+
+    <div style="background:#f0fdf4;border-radius:8px;padding:12px 16px;margin-bottom:14px;border-left:4px solid #22863a;font-size:0.88rem;color:#134e1f;line-height:1.7">
+      <strong>💡 Nutzungshinweis:</strong>
+      Jede Zeile ist ein Put. Tragen Sie dieselbe Aktie mehrfach ein – z.B. KO mit Strike 60, 62 und 64 –
+      um die beste Kombination aus Prämie, Breakeven und Annualisierter Rendite zu finden.
+      Die <strong style="color:#b45309">★ Ann. Rendite</strong>-Spalte markiert automatisch die beste Option <span style="background:#fef08a;padding:1px 6px;border-radius:4px">gelb</span>.
+    </div>
+
+    <div class="ann-legend">
+      ⚠️ Für die Ann. Rendite müssen <strong>Heutiges Datum</strong>, <strong>Kurs</strong>, <strong>Strike</strong>, <strong>Prämie</strong> und <strong>Verfallsdatum</strong> ausgefüllt sein.
+    </div>
+
+    <div class="date-row">
+      <label>📅 Heutiges Datum:</label>
+      <input type="date" id="m-today" oninput="updateMulti()">
+    </div>
+
+    <div class="tbl-toolbar">
+      <button class="btn-add" onclick="addRow()">➕ Zeile hinzufügen</button>
+      <button class="btn-del" onclick="delLastRow()">🗑 Letzte Zeile löschen</button>
+      <button class="btn-clr" onclick="clearAll()">✖ Alle löschen</button>
+    </div>
+
+    <div class="tbl-wrap">
+      <table class="multi">
+        <thead>
+          <tr>
+            <th style="width:30px"></th>
+            <th style="width:130px">Bezeichnung<br><span style="font-weight:400;font-size:0.7rem;opacity:0.85">(z.B. „KO Put 62 Jan")</span></th>
+            <th style="width:110px">Ticker<br>+ Kurs abrufen</th>
+            <th style="width:80px">Kurs ($)</th>
+            <th style="width:80px">Strike ($)</th>
+            <th style="width:80px">Prämie ($)</th>
+            <th style="width:115px">Verfallsdatum</th>
+            <th>Tage</th>
+            <th>Prämien-<br>rendite (%)</th>
+            <th>🎯 Break-<br>even ($)</th>
+            <th>Puffer<br>(%)</th>
+            <th>Kap.<br>($)</th>
+            <th class="ann-hdr">★ Ann. Rendite<br>(% p.a.)</th>
+          </tr>
+        </thead>
+        <tbody id="multi-tbody">
+        </tbody>
+      </table>
+    </div>
+    <p class="tip" style="margin-top:8px">★ Die Zeile mit der höchsten annualisierten Rendite wird automatisch gelb markiert.</p>
+  </div>
+</div>
+
+<!-- ===== WAS TUN ===== -->
+<div id="tab-action" class="tab-pane">
+  <div class="card">
+    <h2>✅ Was tun je nach Situation?</h2>
+    <table class="scenario-table">
+      <thead><tr><th>Szenario</th><th>Situation</th><th>Empfehlung</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>✅ Kurs bleibt über Strike</strong></td>
+          <td>Option verfällt wertlos am Verfall</td>
+          <td>Prämie einstreichen. Neuen Put auf gleiche oder andere Aktie schreiben (Roll Out).</td>
+        </tr>
+        <tr>
+          <td><strong>⚠️ Kurs fällt unter Strike (Zuteilung droht)</strong></td>
+          <td>Option ist im Geld (ITM), Zuteilung wahrscheinlich</td>
+          <td>Entscheiden: Zuteilung akzeptieren (Aktie kaufen zu effektivem Preis = Strike − Prämie) oder Option zurückkaufen und mit tieferem Strike / längerem Datum rollen.</td>
+        </tr>
+        <tr>
+          <td><strong>🔄 Kurs fällt stark (weit unter Strike)</strong></td>
+          <td>Großer Buchverlust, Zuteilung sicher</td>
+          <td>Option zurückkaufen, neuen Put tiefer und mit längerem Datum schreiben (Roll Out &amp; Down). Oder Zuteilung nehmen und sofort Covered Calls auf die neuen Aktien schreiben.</td>
+        </tr>
+        <tr>
+          <td><strong>📈 Kurs steigt stark (weit über Strike)</strong></td>
+          <td>Option schnell profitabel (>50% der Prämie verdient)</td>
+          <td>Option frühzeitig zurückkaufen (bei 50% Gewinn = Ellman-Regel). Kapital für neuen Put freisetzen.</td>
+        </tr>
+        <tr>
+          <td><strong>⏰ Kurz vor Verfall (1–5 Tage)</strong></td>
+          <td>Theta-Zerfall maximal, kaum noch Zeitwert</td>
+          <td>Option zurückkaufen (fast wertlos) und neuen Put schreiben. Nicht auf die letzten Cents warten.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top:18px;padding:14px;background:#f0fdf4;border-radius:8px;border-left:4px solid #22863a">
+      <strong>📐 Ellman-Regel für CSPs:</strong><br>
+      <span style="font-size:0.88rem;color:#166534">
+        Strike-Wahl: 1 Strike unter dem aktuellen Kurs (leicht OTM). ROO-Ziel: 2–4% pro Monat.
+        Sobald 50% der Prämie erreicht sind → Option schließen und neu schreiben (erhöht die Jahresrendite erheblich).
+        Nach Zuteilung: sofort Covered Calls auf die zugeteilten Aktien schreiben = Wheel-Strategie.
+      </span>
+    </div>
+
+    <div style="margin-top:14px;padding:14px;background:#eff6ff;border-radius:8px;border-left:4px solid #3b82f6">
+      <strong>🔄 CSP + Covered Call = The Wheel</strong><br>
+      <span style="font-size:0.88rem;color:#1e3a5f">
+        Viele Anleger kombinieren Cash Secured Puts mit Covered Calls zur sogenannten <em>Wheel-Strategie</em>:
+        CSP schreiben → bei Zuteilung Covered Call schreiben → bei Zuteilung wieder CSP schreiben usw.
+        Beide Phasen bringen Prämieneinnahmen.
+      </span>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <a href="https://www.meine-geldseite.de" target="_blank">www.meine-geldseite.de</a> &nbsp;|&nbsp;
+  Kein Anlageersatz – alle Angaben ohne Gewähr. &nbsp;|&nbsp;
+  Kursdaten: <a href="https://finnhub.io" target="_blank">Finnhub.io</a> &nbsp;|&nbsp;
+  <a href="https://finnhub.io/register" target="_blank">Kostenlos registrieren</a>
+</footer>
+
+<script>
+// =====================
+// UTILS
+// =====================
+const el  = id => document.getElementById(id);
+const num = id => { const v = parseFloat(el(id)?.value); return isNaN(v) ? null : v; };
+const dat = id => { const v = el(id)?.value; return v ? new Date(v+'T00:00:00') : null; };
+const fp  = v  => v !== null && v !== undefined ? (v*100).toFixed(2)+'%' : '–';
+const fd  = v  => v !== null ? '$'+v.toFixed(2) : '–';
+const fi  = v  => v !== null ? '$'+Math.round(v) : '–';
+
+function daysBetween(expiry, today) {
+  if (!expiry || !today) return null;
+  const ms = expiry - today;
+  if (ms <= 0) return null;
+  return Math.ceil(ms / 86400000);
+}
+
+// =====================
+// CORE CSP CALCULATION
+// =====================
+function calcCSP(S, today, K, expiry, P) {
+  if (!K || !P) return null;           // Strike und Prämie müssen da sein
+  const daysToExp   = daysBetween(expiry, today);
+  const capital     = K * 100;         // Gebundenes Kapital
+  const premTotal   = P * 100;         // Gesamtprämie
+  const roo         = premTotal / capital;                // Prämienrendite
+  const annualized  = (daysToExp && daysToExp > 0) ? roo * (365 / daysToExp) : null;
+  const breakeven   = K - P;           // Breakeven-Preis
+  const buffer      = S ? (S - breakeven) / S : null;    // Puffer in %
+  const effPrice    = breakeven;       // Effektiver Kaufpreis bei Zuteilung
+  // Moneyness
+  const isITM = S ? K > S : null;      // Put ist ITM wenn Strike > Kurs
+  const isATM = S ? Math.abs(K - S) / S < 0.005 : null;
+  return { daysToExp, capital, premTotal, roo, annualized, breakeven,
+           buffer, effPrice, isITM, isATM };
+}
+
+// =====================
+// SINGLE
+// =====================
+function calcSingle() {
+  const S = num('s-price'), K = num('s-strike'), P = num('s-prem');
+  const today = dat('s-today'), expiry = dat('s-expiry');
+  const r = calcCSP(S, today, K, expiry, P);
+  if (!r) { el('s-result').style.display='none'; return; }
+  el('s-result').style.display = 'block';
+
+  el('r-ann').textContent      = r.annualized !== null ? fp(r.annualized) : '(Verfallsdatum fehlt)';
+  el('r-roo').textContent      = fp(r.roo);
+  el('r-be').textContent       = fd(r.breakeven);
+  el('r-buf').textContent      = r.buffer !== null ? fp(r.buffer) : '(Kurs fehlt)';
+  el('r-days').textContent     = r.daysToExp !== null ? r.daysToExp+' Tage' : '–';
+  el('r-prem-total').textContent = fd(r.premTotal);
+  el('r-capital').textContent  = fi(r.capital);
+  el('r-effprice').textContent = fd(r.effPrice);
+
+  // Moneyness badge
+  let badge = '';
+  if (r.isATM)      badge = '<span class="badge badge-atm">≈ ATM – Am Geld</span>';
+  else if (r.isITM) badge = '<span class="badge badge-itm">⚠️ ITM – Im Geld (Strike über Kurs – Zuteilung wahrscheinlicher)</span>';
+  else if (S)       badge = '<span class="badge badge-otm">✅ OTM – Aus dem Geld (Strike unter Kurs)</span>';
+  el('s-moneyness-badge').innerHTML = badge;
+
+  // Assignment info
+  if (K && P) {
+    el('s-assign-text').textContent =
+      `Sie kaufen 100 Aktien zu ${fd(K)} (Strike). Effektiver Kaufpreis: ${fd(r.effPrice)} (Strike − Prämie).`
+      + (S ? ` Das ist ${fp((S - r.effPrice)/S)} unter dem heutigen Kurs.` : '');
+  }
+}
+
+// =====================
+// MULTI TABLE
+// =====================
+let rowCount = 0;
+
+const DEMO = [
+  {label:'KO Put 60, 21 Tage',    ticker:'KO',   price:'63.10', strike:'60.00', prem:'0.55', exp: offsetDate(21)},
+  {label:'KO Put 62, 21 Tage',    ticker:'KO',   price:'63.10', strike:'62.00', prem:'0.95', exp: offsetDate(21)},
+  {label:'KO Put 62, 35 Tage',    ticker:'KO',   price:'63.10', strike:'62.00', prem:'1.45', exp: offsetDate(35)},
+  {label:'KO Put 63, 21 Tage',    ticker:'KO',   price:'63.10', strike:'63.00', prem:'1.35', exp: offsetDate(21)},
+  {label:'AAPL Put 210, 28 Tage', ticker:'AAPL', price:'214.50',strike:'210.00',prem:'3.10', exp: offsetDate(28)},
+];
+
+function offsetDate(days) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0,10);
+}
+
+function addRow(data) {
+  rowCount++;
+  const id = rowCount;
+  const tbody = el('multi-tbody');
+  const tr = document.createElement('tr');
+  tr.id = `mrow-${id}`;
+  tr.innerHTML = `
+    <td class="ctd"><button class="del-btn" onclick="delRow(${id})" title="Zeile löschen">✕</button></td>
+    <td class="lbl-col"><input type="text" id="m${id}-label" placeholder='z.B. KO Put 62 Jan' value="${data?.label||''}" style="width:120px;font-size:0.82rem"></td>
+    <td>
+      <div class="tk-cell">
+        <input type="text" id="m${id}-ticker" placeholder="KO" value="${data?.ticker||''}">
+        <button onclick="fetchMulti(${id})" title="Kurs abrufen">↓ Kurs</button>
+      </div>
+      <div style="font-size:0.72rem;color:#64748b;height:14px;margin-top:1px" id="m${id}-fstatus"></div>
+    </td>
+    <td><input type="number" id="m${id}-price"  placeholder="0.00" step="0.01" value="${data?.price||''}"  oninput="updateMulti()"></td>
+    <td><input type="number" id="m${id}-strike" placeholder="0.00" step="0.01" value="${data?.strike||''}" oninput="updateMulti()"></td>
+    <td><input type="number" id="m${id}-prem"   placeholder="0.00" step="0.01" value="${data?.prem||''}"   oninput="updateMulti()"></td>
+    <td><input type="date"   id="m${id}-expiry" value="${data?.exp||''}" oninput="updateMulti()"></td>
+    <td class="ctd" id="m${id}-days">–</td>
+    <td class="ctd" id="m${id}-roo">–</td>
+    <td class="ctd be-col" id="m${id}-be">–</td>
+    <td class="ctd" id="m${id}-buf">–</td>
+    <td class="ctd" id="m${id}-cap">–</td>
+    <td class="ctd ann-col" id="m${id}-ann">–</td>
+  `;
+  tbody.appendChild(tr);
+  updateMulti();
+}
+
+function delRow(id) {
+  const tr = el(`mrow-${id}`);
+  if (tr) tr.remove();
+  updateMulti();
+}
+
+function delLastRow() {
+  const tbody = el('multi-tbody');
+  if (tbody.children.length > 0) {
+    tbody.removeChild(tbody.lastElementChild);
+    updateMulti();
+  }
+}
+
+function clearAll() {
+  if (!confirm('Alle Zeilen löschen?')) return;
+  el('multi-tbody').innerHTML = '';
+  rowCount = 0;
+}
+
+function updateMulti() {
+  const today = dat('m-today');
+  const rows  = Array.from(el('multi-tbody').children);
+  const results = [];
+
+  rows.forEach(tr => {
+    const id  = tr.id.replace('mrow-','');
+    const S   = num(`m${id}-price`);
+    const P   = num(`m${id}-prem`);
+    const K   = num(`m${id}-strike`);
+    const exp = dat(`m${id}-expiry`);
+    const r   = calcCSP(S, today, K, exp, P);
+    results.push({ id, r });
+
+    const set = (field, val) => { const c = el(`m${id}-${field}`); if(c) c.textContent = val; };
+
+    if (r) {
+      set('days', r.daysToExp !== null ? r.daysToExp : '–');
+      set('roo',  fp(r.roo));
+      set('be',   r.breakeven !== null ? fd(r.breakeven) : '–');
+      set('buf',  r.buffer !== null ? fp(r.buffer) : '–');
+      set('cap',  r.capital ? fi(r.capital) : '–');
+      set('ann',  r.annualized !== null ? fp(r.annualized) : (today ? '(Datum fehlt)' : '(Datum setzen)'));
+    } else {
+      ['days','roo','be','buf','cap'].forEach(f => set(f,'–'));
+      set('ann', today ? '–' : '(Datum setzen)');
+    }
+    tr.classList.remove('best-row');
+  });
+
+  // Highlight best annualized
+  const valid = results.filter(x => x.r && x.r.annualized !== null);
+  if (valid.length > 0) {
+    const best = valid.reduce((a,b) => a.r.annualized > b.r.annualized ? a : b);
+    const bestTr = el(`mrow-${best.id}`);
+    if (bestTr) bestTr.classList.add('best-row');
+  }
+}
+
+// =====================
+// FINNHUB FETCH
+// =====================
+function getApiKey() { return localStorage.getItem('mgs_apikey') || ''; }
+
+async function fetchPrice(tickerId, priceId, statusId) {
+  const key = getApiKey();
+  if (!key) { el(statusId).textContent='❌ Kein API-Key gespeichert'; el(statusId).className='fetch-status err'; return; }
+  const sym = el(tickerId).value.trim().toUpperCase();
+  if (!sym)  { el(statusId).textContent='❌ Bitte Ticker eingeben'; el(statusId).className='fetch-status err'; return; }
+  el(statusId).textContent='⏳ Abruf…'; el(statusId).className='fetch-status';
+  try {
+    const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${key}`);
+    const d   = await res.json();
+    if (!d.c || d.c === 0) throw new Error('Kurs nicht gefunden');
+    el(priceId).value = d.c.toFixed(2);
+    el(statusId).textContent = `✅ ${sym}: $${d.c.toFixed(2)}`;
+    el(statusId).className = 'fetch-status ok';
+    calcSingle();
+  } catch(e) {
+    el(statusId).textContent = '❌ '+e.message;
+    el(statusId).className = 'fetch-status err';
+  }
+}
+
+async function fetchMulti(id) {
+  const key = getApiKey();
+  const sym = el(`m${id}-ticker`)?.value.trim().toUpperCase();
+  const statusEl = el(`m${id}-fstatus`);
+  if (!key) { statusEl.textContent='Kein Key'; return; }
+  if (!sym) { statusEl.textContent='Ticker?'; return; }
+  statusEl.textContent = '⏳';
+  try {
+    const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${key}`);
+    const d   = await res.json();
+    if (!d.c || d.c === 0) throw new Error('n/a');
+    el(`m${id}-price`).value = d.c.toFixed(2);
+    statusEl.textContent = `✅ $${d.c.toFixed(2)}`;
+    statusEl.style.color = '#16a34a';
+    updateMulti();
+  } catch(e) {
+    statusEl.textContent = '❌';
+    statusEl.style.color = '#dc2626';
+  }
+}
+
+// =====================
+// API KEY
+// =====================
+function loadApiKey() {
+  const k = getApiKey();
+  if (k) {
+    el('api-key-in').value = k;
+    el('api-banner').classList.add('ok');
+    el('api-status').textContent = '✅ API-Key aktiv – Live-Kurse verfügbar';
+  }
+}
+
+el('api-save').addEventListener('click', () => {
+  const k = el('api-key-in').value.trim();
+  if (!k) return;
+  localStorage.setItem('mgs_apikey', k);
+  el('api-banner').classList.add('ok');
+  el('api-status').textContent = '✅ API-Key gespeichert – Live-Kurse verfügbar';
+});
+
+// =====================
+// TAB SWITCH
+// =====================
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav.tabs button').forEach(b => b.classList.remove('active'));
+  el('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// =====================
+// INIT
+// =====================
+window.addEventListener('DOMContentLoaded', () => {
+  loadApiKey();
+  const todayStr = new Date().toISOString().slice(0,10);
+  el('s-today').value = todayStr;
+  el('m-today').value = todayStr;
+  DEMO.forEach(d => addRow(d));
+});
+</script>
+</body>
+</html>
